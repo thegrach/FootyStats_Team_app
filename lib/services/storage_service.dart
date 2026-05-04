@@ -86,7 +86,7 @@ class StorageService {
     final file = File('${downloadsDir.path}/team_stats_log.csv');
 
     List<List<String>> rows = [
-      ['Team', 'Category', 'Quarter', 'Timestamp'],
+      ['Team', 'Category', 'Quarter', 'Match Time', 'Real Time'],
       ...eventLog.map((e) => e.toCsvRow()),
     ];
 

@@ -44,23 +44,25 @@ class RecordingScreenState extends State<RecordingScreen> {
   }
 
   void _startTimer() {
-    if (globalTimer != null && globalTimer!.isActive) return;
-
     globalIsRunning = true;
-    globalTimer = Timer.periodic(Duration(seconds: 1), (_) {
-      globalElapsedSeconds++;
-    });
+    lastStartTime = DateTime.now();
+    if (mounted) setState(() {});
   }
 
   void _pauseTimer() {
-    globalTimer?.cancel();
+    if (lastStartTime != null) {
+      totalElapsedSecondsBeforeLastStart += DateTime.now().difference(lastStartTime!).inSeconds;
+      lastStartTime = null;
+    }
     globalIsRunning = false;
+    if (mounted) setState(() {});
   }
 
   void _resetTimer() {
-    globalTimer?.cancel();
-    globalElapsedSeconds = 0;
+    totalElapsedSecondsBeforeLastStart = 0;
+    lastStartTime = null;
     globalIsRunning = false;
+    if (mounted) setState(() {});
   }
 
   void refreshCategories() {
@@ -77,6 +79,17 @@ class RecordingScreenState extends State<RecordingScreen> {
     final minutes = totalSeconds ~/ 60;
     final seconds = totalSeconds % 60;
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  String _getEventTimestamp() {
+    int eventSeconds = globalElapsedSeconds - 2;
+    if (eventSeconds < 0) eventSeconds = 0;
+    return _formatTime(eventSeconds);
+  }
+
+  String _getRealTimestamp() {
+    final now = DateTime.now();
+    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}:${now.second.toString().padLeft(2, '0')}';
   }
 
   String _formatDiff(int value) => value >= 0 ? '+$value' : '$value';
@@ -200,12 +213,13 @@ class RecordingScreenState extends State<RecordingScreen> {
           DropdownButton<String>(
             value: selectedQuarter,
             underline: SizedBox(),
-            onChanged: (String? newValue) {
+            onChanged: globalIsRunning ? null : (String? newValue) {
               setState(() {
                 selectedQuarter = newValue!;
+                _resetTimer();
               });
             },
-            items: ['Q1', 'Q2', 'Q3', 'Q4'].map((quarter) => DropdownMenuItem(value: quarter, child: Text(quarter))).toList(),
+            items: quarters.map((quarter) => DropdownMenuItem(value: quarter, child: Text(quarter))).toList(),
           ),
           PopupMenuButton<String>(
             icon: Icon(Icons.file_download),
@@ -321,7 +335,8 @@ class RecordingScreenState extends State<RecordingScreen> {
                                       category: category,
                                       team: 'A',
                                       quarter: selectedQuarter,
-                                      timestamp: _formatTime(globalElapsedSeconds),
+                                      timestamp: _getEventTimestamp(),
+                                      realTime: _getRealTimestamp(),
                                     ));
                                     StorageService.saveEventLogToFile();
                                   });
@@ -341,7 +356,8 @@ class RecordingScreenState extends State<RecordingScreen> {
                                       category: category,
                                       team: 'B',
                                       quarter: selectedQuarter,
-                                      timestamp: _formatTime(globalElapsedSeconds),
+                                      timestamp: _getEventTimestamp(),
+                                      realTime: _getRealTimestamp(),
                                     ));
                                     StorageService.saveEventLogToFile();
                                   });

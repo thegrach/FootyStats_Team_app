@@ -4,8 +4,17 @@ import 'models/stat_event.dart';
 
 // Global timer state
 Timer? globalTimer;
-int globalElapsedSeconds = 0;
+int totalElapsedSecondsBeforeLastStart = 0;
+DateTime? lastStartTime;
 bool globalIsRunning = false;
+
+int get globalElapsedSeconds {
+  int elapsed = totalElapsedSecondsBeforeLastStart;
+  if (globalIsRunning && lastStartTime != null) {
+    elapsed += DateTime.now().difference(lastStartTime!).inSeconds;
+  }
+  return elapsed;
+}
 
 // Global key to allow UI update in RecordingScreen
 final GlobalKey recordingScreenKey = GlobalKey();
